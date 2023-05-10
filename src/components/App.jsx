@@ -29,15 +29,8 @@ const App = () => {
       scrollToTop();
     }
     fetchImages(searchQuery, page);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      return;
-    }
-
-    fetchImages(searchQuery, page);
-  }, [page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, page]);
 
   const fetchImages = async (query, page) => {
     try {
@@ -53,8 +46,9 @@ const App = () => {
         ? setImages(data.hits)
         : setImages(prevState => [...prevState, ...data.hits]);
       setTotalImages(data.totalHits);
-    } catch (error) {
-      setError(error);
+    } catch (fetchError) {
+      setError(fetchError);
+      console.log(error);
     } finally {
       setIsLoading(false);
     }
