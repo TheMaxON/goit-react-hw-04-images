@@ -1,4 +1,4 @@
-import { React, Component } from 'react';
+import { useState, useEffect } from 'react';
 import { getImages } from '../services/api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -10,32 +10,38 @@ import Button from '../components/Button/Button';
 import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
 
-class App extends Component {
-  state = {
-    searchQuery: '',
-    images: [],
-    page: 1,
-    totalImages: 0,
-    isLoading: false,
-    showModal: false,
-    modalImage: '',
-    tags: '',
-    error: null,
-  };
+const App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalImages, setTotalImages] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalImage, setModalImage] = useState('');
+  const [tags, setTags] = useState('');
+  const [error, setError] = useState(null);
 
-  componentDidUpdate = (_, prevState) => {
-    const { searchQuery, page } = this.state;
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.fetchImages(searchQuery, page);
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      return;
     }
-    if (prevState.searchQuery !== searchQuery) {
-      this.scrollToTop();
+    if (page === 1) {
+      scrollToTop();
     }
-  };
+    fetchImages(searchQuery, page);
+  }, [searchQuery]);
 
-  fetchImages = async (query, page) => {
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      return;
+    }
+
+    fetchImages(searchQuery, page);
+  }, [page]);
+
+  const fetchImages = async (query, page) => {
     try {
-      this.setState({ isLoading: true });
+      setIsLoading(true);
 
       const data = await getImages(query, page);
       if (data.hits.length === 0) {
@@ -43,80 +49,77 @@ class App extends Component {
           theme: 'dark',
         });
       }
-      this.setState(({ images }) => ({
-        images: [...images, ...data.hits],
-        totalImages: data.totalHits,
-      }));
+      page === 1
+        ? setImages(data.hits)
+        : setImages(prevState => [...prevState, ...data.hits]);
+      setTotalImages(data.totalHits);
     } catch (error) {
-      this.setState({ error });
+      setError(error);
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  onSubmit = searchQuery => {
-    return this.setState({ searchQuery, page: 1, images: [] });
+  const onSubmit = searchQuery => {
+    setSearchQuery(searchQuery);
+    setPage(1);
+    setImages([]);
   };
 
-  onLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const onLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  onOpenModal = (modalImage, tags) => {
-    this.setState({ showModal: true, modalImage, tags });
+  const onOpenModal = (modalImage, tags) => {
+    setModalImage(modalImage);
+    setTags(tags);
+    setShowModal(true);
   };
 
-  onCloseModal = () => {
-    this.setState({ showModal: false });
+  const onCloseModal = () => {
+    setShowModal(false);
   };
 
-  scrollToTop = () => {
+  const scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth',
     });
   };
 
-  render() {
-    const { images, totalImages, isLoading, showModal, modalImage, tags } =
-      this.state;
-    const totalPages = totalImages / images.length;
+  const totalPages = totalImages / images.length;
+  return (
+    <>
+      <Section>
+        <Searchbar onSubmit={onSubmit} />
+      </Section>
 
-    return (
-      <>
-        <Section>
-          <Searchbar onSubmit={this.onSubmit} />
-        </Section>
+      {isLoading && <Loader />}
+      <Section>
+        <ImageGallery images={images} onOpenModal={onOpenModal} />
+      </Section>
 
-        {isLoading && <Loader />}
-        <Section>
-          <ImageGallery images={images} onOpenModal={this.onOpenModal} />
-        </Section>
-
-        <Section>
-          {totalPages > 1 && !isLoading && images.length !== 0 && (
-            <Button onLoadMore={this.onLoadMore} />
-          )}
-        </Section>
-
-        {showModal && (
-          <Modal
-            modalImage={modalImage}
-            tags={tags}
-            onCloseModal={this.onCloseModal}
-          />
+      <Section>
+        {totalPages > 1 && !isLoading && images.length !== 0 && (
+          <Button onLoadMore={onLoadMore} />
         )}
+      </Section>
 
-        {images.length === 0 && !isLoading && (
-          <PlaceholderText text={"Let's find your photos!"} />
-        )}
+      {showModal && (
+        <Modal
+          modalImage={modalImage}
+          tags={tags}
+          onCloseModal={onCloseModal}
+        />
+      )}
 
-        <ToastContainer />
-      </>
-    );
-  }
-}
+      {images.length === 0 && !isLoading && (
+        <PlaceholderText text={"Let's find your photos!"} />
+      )}
+
+      <ToastContainer />
+    </>
+  );
+};
 
 export default App;

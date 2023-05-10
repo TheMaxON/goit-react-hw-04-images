@@ -1,52 +1,47 @@
-import { React, Component } from 'react';
+import { useState } from 'react';
 import { PropTypes } from 'prop-types';
 import { toast } from 'react-toastify';
 import { BiSearchAlt2 } from 'react-icons/bi';
 import { Header, Form, Button, Input } from './Searchbar.styled.jsx';
 
-class Searchbar extends Component {
-  state = {
-    query: '',
+const Searchbar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('');
+
+  const handleChange = event => {
+    setQuery(event.currentTarget.value);
   };
 
-  handleChange = event => {
-    this.setState({ query: event.currentTarget.value });
-  };
-
-  handleSubmit = event => {
+  const handleSubmit = event => {
     event.preventDefault();
-    const { onSubmit } = this.props;
-    const query = this.state.query.toLowerCase();
+    const normalizedQuery = query.toLowerCase().trim();
 
-    if (query.trim() === '') {
+    if (normalizedQuery === '') {
       return toast.warning('Please enter your request.', { theme: 'dark' });
     }
     onSubmit(query);
-    this.setState({ query: '' });
+    setQuery('');
   };
 
-  render() {
-    return (
-      <Header>
-        <Form onSubmit={this.handleSubmit}>
-          <Button type="submit" aria-label="Search" className="button">
-            <BiSearchAlt2 style={{ width: 20, height: 20 }} />
-          </Button>
+  return (
+    <Header>
+      <Form onSubmit={handleSubmit}>
+        <Button type="submit" aria-label="Search" className="button">
+          <BiSearchAlt2 style={{ width: 20, height: 20 }} />
+        </Button>
 
-          <Input
-            className="input"
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            value={this.state.query}
-            onChange={this.handleChange}
-          />
-        </Form>
-      </Header>
-    );
-  }
-}
+        <Input
+          className="input"
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          value={query}
+          onChange={handleChange}
+        />
+      </Form>
+    </Header>
+  );
+};
 
 export default Searchbar;
 
